@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+<script src="javascripts/d3.slider.js"></script>
+
+<style>
+
+
+ .mySlider_a {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_a:hover {
+  opacity: 1;
+}
+
+.mySlider_a::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_a::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: red;
+  cursor: pointer;
+}
+</style>
+
+
+<!-- Button -->
+<div class="slidecontainer">
+	<input type="range" class="mySlider_a" name="Attraction" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="attraction" checked><label>Attractions</label>
+	<span id="Attraction room"></span><br>
+</div>
+
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="640" height="460"></svg>
+
+<script>
+
+// The svg
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+// Map and projection
+var projection = d3.geoMercator()
+    .center([-73.97, 40.70])                // GPS of location to zoom on
+    .scale(46000)                       // This is like the zoom
+    .translate([ width/2, height/2 ])
+	
+//Define path generator
+var path = d3.geoPath()
+    .projection(projection);
+			   
+var colorScheme = d3.schemeGreens[5];
+//colorScheme.unshift("#eee")
+var colorScale = d3.scaleThreshold()
+    .domain([0, 50, 100, 150, 200])
+    .range(colorScheme);
+
+// Legend
+var g = svg.append("g")
+    .attr("class", "legendThreshold")
+    .attr("transform", "translate(20,120)");
+g.append("text")
+    .attr("class", "caption")
+    .attr("x", 0)
+    .attr("y", -6)
+    .text("Price Scale");
+var labels = ['0-50', '50-100', '100-150', '150-200', '> 200'];
+var legend = d3.legendColor()
+    .labels((d,i) => labels[d.i] )
+    .shapePadding(0)
+    .scale(colorScale);
+svg.select(".legendThreshold")
+    .call(legend);
+
+
+// Load external data and boot
+d3.json("Boroughs.geojson", function(data){
+	
+	d3.csv("AB_NYC_2019.csv" , function(markers) {
+	d3.csv("attractions.csv" , function(favorites) {
+		
+		var format = d3.format(".3n");
+		//Calculate Count and Avg
+		var countNeigh = {};
+		var avgNeigh = {};
+
+		for (var i = 0; i < markers.length; i++) {
+			markers[i].price = +markers[i].price
+			var neighbourhood_group = markers[i].neighbourhood_group;
+			if(countNeigh[neighbourhood_group] === undefined) {
+				countNeigh[neighbourhood_group] = 1;
+				avgNeigh[neighbourhood_group] = markers[i].price;
+			} else {
+				countNeigh[neighbourhood_group] = countNeigh[neighbourhood_group] + 1;
+				avgNeigh[neighbourhood_group] = avgNeigh[neighbourhood_group] + markers[i].price;
+			}
+			
+		}
+			
+		avgNeigh["Queens"] = avgNeigh["Queens"]/countNeigh["Queens"]
+		avgNeigh["Manhattan"] = avgNeigh["Manhattan"]/countNeigh["Manhattan"]
+		avgNeigh["Brooklyn"] = avgNeigh["Brooklyn"]/countNeigh["Brooklyn"]
+		avgNeigh["Bronx"] = avgNeigh["Bronx"]/countNeigh["Bronx"]
+		avgNeigh["Staten Island"] = avgNeigh["Staten Island"]/countNeigh["Staten Island"]//avgNeigh["Staten Island"]/countNeigh["Staten Island"]
+		
+			
+		// Draw the map
+		var entrySelection = svg.append("g").selectAll("path").data(data.features).enter()
+		
+			entrySelection
+			.append("path")
+			.attr("class", "neigh_class")
+			  .attr("fill", (d,i)=> colorScale(format(avgNeigh[d.properties.boro_name])) )  //format(avgNeigh[d.properties.boro_name]/countNeigh[d.properties.boro_name] )
+			  .attr("d", path
+			  )
+			.style("stroke", "black")
+			.style("opacity", .3)
+			.append("title")      //Simple tooltip
+			.text((d,i)=> ("avgPrice : " + format(avgNeigh[d.properties.boro_name])) )
+
+			entrySelection
+				.append("text")
+			  .attr("class", "label")
+			  .attr("text-anchor","middle")
+			  .attr("x", (d,i)=> path.centroid(d)[0] )
+			  .attr("y", (d,i)=> path.centroid(d)[1] )
+			  .text((d,i)=> d.properties.boro_name )
+			  
+		// Add favorites:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(favorites)
+		  .enter()
+		  .append("rect")
+			.attr("class" , "attraction" )
+			.attr("x", (d,i) => projection([d.longitude, d.latitude])[0] )
+			.attr("y", (d,i) => projection([d.longitude, d.latitude])[1] )
+			.attr("width", 1)
+			.attr("height", 1)
+			.style("fill", "red" )
+			.attr("stroke", "red" )
+			.attr("stroke-width", 0.2)
+			.attr("fill-opacity", 0.1)
+			.append("title")      //Simple tooltip
+			.text((d,i) => d.name )
+
+		
+		// This function is gonna change the opacity and size of selected and unselected circles
+		function update(){
+
+		  // For each check box:
+		  d3.selectAll(".checkbox").each(function(d){
+			cb = d3.select(this);
+			grp = cb.property("value")
+			//var privateRoom = cb.property("checked")
+			
+			// If the box is check, I show the group
+			if(cb.property("checked")){
+				svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1)
+			// Otherwise I hide it
+			}else{
+			  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0)
+			}
+		  })
+		}
+		
+		// When a button change, I run the update function
+			d3.selectAll(".checkbox").on("change",update);
+
+			// And I initialize it at the beginning
+			update()
+	});
+	});
+})
+
+</script>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script type="text/javascript" src=
+"https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js">
+
+</script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+
+<style>
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}</style>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 20, left: 50},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+          dataArray = []
+
+// Parse the Data
+d3.csv("./AB_NYC_2019.csv",function(data) {
+  // console.log(JSON.stringify(data));
+  jsonString = JSON.stringify(data);
+  jsonArray = JSON.parse(jsonString)
+  // console.log(jsonString);
+  for (var i = 0; i < jsonArray.length; i++) {
+    // if(i == 40000){
+    //   break;
+    // }
+    // console.log(jsArray[i].id)
+    obj = new Object();
+    obj.id = jsonArray[i].id
+    obj.neighbourhood_group = jsonArray[i].neighbourhood_group
+    obj.neighbourhood = jsonArray[i].neighbourhood
+    obj.price = jsonArray[i].price
+    obj.room_type = jsonArray[i].room_type
+    dataArray.push(obj)
+  }
+  aftergrouping = _.groupBy(jsonArray,"neighbourhood_group")
+
+
+  brooklyn_count = _.countBy(aftergrouping["Brooklyn"],"room_type")
+  bronx_count = _.countBy(aftergrouping["Bronx"],"room_type")
+  manhattan_count = _.countBy(aftergrouping["Manhattan"],"room_type")
+  queens_count = _.countBy(aftergrouping["Queens"],"room_type")
+  staten_count = _.countBy(aftergrouping["Staten Island"],"room_type")
+
+
+  function arrayAverage(arr){
+      //Find the sum
+      var sum = 0;
+      for(var i in arr) {
+        n =  parseInt(arr[i]);
+          sum +=n;
+      }
+      //Get the length of the array
+      var numbersCnt = arr.length;
+      //Return the average / mean.
+      return (sum / numbersCnt);
+  }
+
+
+
+
+//   var count = {
+// "Brooklyn":brooklyn_count,
+// "Bronx":bronx_count,
+// "Manhattan":manhattan_count,
+// "Queens":queens_count,
+// "Staten Island":staten_count
+//   }
+
+var avg = {
+  "private_avg_count":0,
+  "home_avg_count" : 0,
+  "shared_avg_count" : 0
+}
+
+var avg_count = {
+"Brooklyn":{
+  avg:{}
+},
+"Bronx":{
+  avg:{}
+},
+"Manhattan":{
+  avg:{}
+},
+"Queens":{
+  avg:{}
+},
+"Staten Island":{
+  avg:{}
+}
+}
+
+
+function calculateAvg(array) {
+  price_array = [];
+  for(var i =0;i<array.length;i++){
+    price_array.push(array[i].price);
+  }
+    arrAvg = arrayAverage(price_array)
+    return arrAvg;
+}
+
+//
+// for(var i = 0;i<dataArray.length;i++){
+//   var neighbourhood_group = jsonArray[i].neighbourhood_group;
+//   count_of_room_type = count[neighbourhood_group];
+//       jsonArray[i].private_count = count_of_room_type["Private room"];
+//       jsonArray[i].home_count = count_of_room_type["Entire home/apt"];
+//       jsonArray[i].shared_count = count_of_room_type["Shared room"];
+// }
+
+key_after_grouping = Object.keys(aftergrouping);
+for(var i=0;i<key_after_grouping.length;i++){
+  neighbourhood_group_room_type_count = _.groupBy(aftergrouping[key_after_grouping[i]],"room_type")
+  avg = {};
+ avg["private_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Private room"]),
+  avg["home_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Entire home/apt"]),
+  avg["shared_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Shared room"])
+  if(key_after_grouping[i] == "Brooklyn"){
+    avg_count["Brooklyn"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Bronx"){
+    avg_count["Bronx"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Manhattan"){
+    avg_count["Manhattan"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Queens"){
+    avg_count["Queens"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Staten Island"){
+    avg_count["Staten Island"].avg = avg
+  }
+}
+// avg["private_avg_count"] = calculateAvg(Brooklyn_room_type_count["Private room"]),
+// avg["home_avg_count"] = calculateAvg(Brooklyn_room_type_count["Entire home/apt"]),
+// avg["shared_avg_count"] = calculateAvg(Brooklyn_room_type_count["Shared room"])
+//
+//
+// avg_count["Brooklyn"].avg = avg
+
+for(var i = 0;i<dataArray.length;i++){
+  var neighbourhood_group = jsonArray[i].neighbourhood_group;
+  count_of_room_type = avg_count[neighbourhood_group].avg;
+      jsonArray[i]["Private Avg count"] = parseFloat(count_of_room_type["private_avg_count"]);
+      jsonArray[i]["Home Avg count"] = parseFloat(count_of_room_type["home_avg_count"]);
+      jsonArray[i]["Shared Avg count"] = parseFloat(count_of_room_type["shared_avg_count"]);
+}
+
+  // List of subgroups = header of the csv files = soil condition here
+  var subgroups = ["Private Avg count","Home Avg count","Shared Avg count"]
+
+  // List of groups = species here = value of the first column called group -> I show them on the X axis
+  var groups = d3.map(jsonArray, function(d){return(d.neighbourhood_group)}).keys()
+
+
+  // Add X axis
+  var x = d3.scaleBand()
+      .domain(groups)
+      .range([0, width])
+      .padding([0.2])
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).tickSize(0));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0, 300])
+    .range([ height, 0 ]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // Another scale for subgroup position?
+  var xSubgroup = d3.scaleBand()
+    .domain(subgroups)
+    .range([0, x.bandwidth()])
+    .padding([0.05])
+
+  // color palette = one color per subgroup
+  var color = d3.scaleOrdinal()
+    .domain(subgroups)
+    .range(['#e41a1c','#377eb8','#4daf4a'])
+
+
+    // var tip = d3.tip()
+    //   .attr('class', 'd3-tip')
+    //   .offset([-10, 0])
+    //   .html(function(d) {
+    //     return "<strong>Frequency:</strong> <span style='color:red'>" + d.frequency + "</span>";
+    //   })
+    //
+
+    var Tooltip = d3.select("#my_dataviz")
+     .append("div")
+     .style("opacity", 0)
+     .attr("class", "tooltip")
+     .style("background-color", "orange")
+     .style("border", "solid")
+     .style("border-width", "2px")
+     .style("border-radius", "5px")
+     .style("padding", "5px")
+     .style("width", "30%")
+
+
+   // Three function that change the tooltip when user hover / move / leave a cell
+   var mouseover = function(d) {
+     Tooltip
+       .style("opacity", 1)
+     d3.select(this)
+       .style("stroke", "black")
+       .style("opacity", 1)
+   }
+   var mousemove = function(d) {
+       Tooltip
+         .html("The: " + d.value)
+         .style("left", (d3.mouse(this)[0]+70) + "px")
+         .style("top", (d3.mouse(this)[1]) + "px")
+
+   }
+   var mouseleave = function(d) {
+     Tooltip
+       .style("opacity", 0)
+     d3.select(this)
+       .style("stroke", "none")
+       .style("opacity", 0.8)
+   }
+
+
+  // Show the bars
+  svg.append("g")
+    .selectAll("g")
+    // Enter in data = loop group per group
+    .data(jsonArray)
+    .enter()
+    .append("g")
+      .attr("transform", function(d) { return "translate(" + x(d.neighbourhood_group) + ",0)"; })
+    .selectAll("rect")
+    .data(function(d) { return subgroups.map(function(key) { return {key: key, value: d[key]}; }); })
+    .enter().append("rect")
+      .attr("x", function(d) { return xSubgroup(d.key); })
+      .attr("y", function(d) { return y(d.value); })
+      .attr("width", xSubgroup.bandwidth())
+      .attr("height", function(d) { return height - y(d.value); })
+      .attr("fill", function(d) { return color(d.key); })
+      .on('mouseover', mouseover)
+      .on('mousemove', mousemove)
+      .on('mouseleave', mouseleave)
+
+
+
+      var tooplTipDiv = d3.select("body").append("div")
+                      .attr("id", "myTooltip")
+                      .style("opacity", 0);
+
+
+
+        var legend = svg.selectAll(".legend")
+            .data(color.domain())
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+        // draw legend colored rectangles
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", color);
+
+        // draw legend text
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) { return d;})
+
+
+
+     });
+
+
+</script>

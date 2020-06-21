@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+<script src="javascripts/d3.slider.js"></script>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+
+
+<style>
+.slidecontainer {
+  width: 100%;
+}
+
+.footcontainer {
+  width: 50%;
+  text-align: center;
+    position: relative;
+}
+
+.footSlider {
+  width: 50%;
+  height: 25px;
+}
+
+.mySlider_p {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_p:hover {
+  opacity: 1;
+}
+
+.mySlider_p::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_p::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #34eaed;
+  cursor: pointer;
+ }
+ 
+.mySlider_e {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_e:hover {
+  opacity: 1;
+}
+
+.mySlider_e::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_e::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #7bff29;
+  cursor: pointer; 
+ }
+ .mySlider_s {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_s:hover {
+  opacity: 1;
+}
+
+.mySlider_s::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_s::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffa600;
+  cursor: pointer;
+}
+
+ .mySlider_a {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_a:hover {
+  opacity: 1;
+}
+
+.mySlider_a::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_a::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: red;
+  cursor: pointer;
+}
+</style>
+
+
+<!-- Button -->
+<div class="slidecontainer">
+<h3><span id="footspan_text" style="color:black">Data randomly selected from "AB_NYC_2019.csv"</span></h3>
+	<!-- Add a slider -->
+	<span id="myspan" style="color:blue"></span><br>
+	<input type="range" class="mySlider_p" name="Private_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox"  class="checkbox" value="Private_room" checked><label>Private room</label>
+	
+	<input type="range" class="mySlider_e" name="Entire_home_apt" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Entire_home_apt" checked><label>Entire home/apt</label>
+	
+	<input type="range" class="mySlider_s" name="Shared_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Shared_room" checked><label>Shared room</label>
+	
+	<input type="range" class="mySlider_a" name="Attraction" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="attraction" checked><label>Attraction</label>
+	<br><br>
+	Price | From : <input type="text" class="footinput" id="min_input" name="min_input" value="0"> To : <input type="text" class="footinput" id="max_input" name="max_input" value="200">
+</div>
+<br>
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="640" height="460"></svg>
+<svg id="my_dataviz2" width="640" height="460"></svg>
+
+<script>
+
+// The svg
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+// Map and projection
+var projection = d3.geoMercator()
+    .center([-73.97, 40.70])                // GPS of location to zoom on
+    .scale(46000)                       // This is like the zoom
+    .translate([ width/2, height/2 ])
+	
+//Define path generator
+var path = d3.geoPath()
+    .projection(projection);
+			   
+// Load external data and boot
+d3.json("Boroughs.geojson", function(data){
+	
+	d3.csv("AB_NYC_2019.csv" , function(markers) {
+	d3.csv("attractions.csv" , function(attractions) {
+		
+		favorites = attractions.map(function( item ) {
+        var newItem = {};
+        newItem.longitude = item.longitude;
+        newItem.latitude = item.latitude;
+        newItem.name = item.name;
+			return newItem;
+		})
+		
+		newmarkers = markers.filter((d,i) => d.price != 0 && d.number_of_reviews >= 100 && d.price < 1000)
+		
+		var format = d3.format(".3n");
+		
+		//Calculate Count and Avg
+		var countObj = {};
+		var countNeigh = {};
+		var avgObj = {};
+		var avgNeigh = {};
+		var maxPrice = 0;
+		for (var i = 0; i < newmarkers.length; i++) {
+			var room_type = newmarkers[i].room_type;
+			if(countObj[room_type] === undefined) {
+				countObj[room_type] = 1;
+				newmarkers[i].price = +newmarkers[i].price
+				avgObj[room_type] = newmarkers[i].price;
+			} else {
+				countObj[room_type] = countObj[room_type] + 1;
+				newmarkers[i].price = +newmarkers[i].price
+				avgObj[room_type] = avgObj[room_type] + newmarkers[i].price;
+			}
+			
+			var neighbourhood_group = newmarkers[i].neighbourhood_group;
+			if(countNeigh[neighbourhood_group] === undefined) {
+				countNeigh[neighbourhood_group] = 1;
+				avgNeigh[neighbourhood_group] = newmarkers[i].price;
+			} else {
+				countNeigh[neighbourhood_group] = countNeigh[neighbourhood_group] + 1;
+				avgNeigh[neighbourhood_group] = avgNeigh[neighbourhood_group] + newmarkers[i].price;
+			}
+			
+			var tempPrice = newmarkers[i].price;
+			if(tempPrice > maxPrice){
+				maxPrice = tempPrice
+			}
+		}
+		
+		avgNeigh["Queens"] = avgNeigh["Queens"]/countNeigh["Queens"]
+		avgNeigh["Manhattan"] = avgNeigh["Manhattan"]/countNeigh["Manhattan"]
+		avgNeigh["Brooklyn"] = avgNeigh["Brooklyn"]/countNeigh["Brooklyn"]
+		avgNeigh["Bronx"] = avgNeigh["Bronx"]/countNeigh["Bronx"]
+		avgNeigh["Staten Island"] = avgNeigh["Staten Island"]/countNeigh["Staten Island"]
+		
+		// Create a color scale
+		var color = d3.scaleOrdinal()
+		  .domain(["Private_room", "Entire_home_apt", "Shared_room", "attraction", "Brooklyn", "Bronx", "Manhattan","Queens","Staten Island"])
+		  .range([ "#34eaed", "#7bff29", "#ed6f34", "red", "#998d90", "#205e22", "#8e9cf5", "yellow", "#f27c99"])
+
+		// Draw the map
+		var entrySelection = svg.append("g").selectAll("path").data(data.features).enter()
+		
+			entrySelection
+			.append("path")
+			.attr("class", "neigh_class")
+			  .attr("fill", (d,i)=> color([d.properties.boro_name]) )  
+			  .attr("d", path
+			  )
+			.style("stroke", "black")
+			.style("opacity", .3)
+			.append("title")      //Simple tooltip
+			.text((d,i)=> ("avgPrice : " + format(avgNeigh[d.properties.boro_name])) )
+
+			entrySelection
+				.append("text")
+			  .attr("class", "label")
+			  .attr("text-anchor","middle")
+			  .attr("x", (d,i)=> path.centroid(d)[0] )
+			  .attr("y", (d,i)=> path.centroid(d)[1] )
+			  .text((d,i)=> d.properties.boro_name )
+		
+		// Add favorites:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(favorites)
+		  .enter()
+		  .append("rect")
+			.attr("class" , "attraction" )
+			.attr("x", (d,i) => projection([d.longitude, d.latitude])[0] )
+			.attr("y", (d,i) => projection([d.longitude, d.latitude])[1] )
+			.attr("width", 1)
+			.attr("height", 1)
+			.style("fill", (d,i) => color("attraction"))
+			.attr("stroke", (d,i) => color("attraction"))
+			.attr("stroke-width", 0.1)
+			.attr("fill-opacity", 0.1)
+			.append("title")      //Simple tooltip
+			.text((d,i) => d.name )
+			
+		// Add circles:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(newmarkers)
+		  .enter()
+		  .append("circle")
+			.attr("class" , (d,i) => d.room_type.replace(" ", "_").replace("/", "_") )
+			.attr("id", (d,i) => i)
+			.attr("price" , (d,i) => d.price )
+			.attr("cx", (d,i) => projection([d.longitude, d.latitude])[0] )
+			.attr("cy", (d,i) => projection([d.longitude, d.latitude])[1] )
+			.attr("r", 3)
+			.style("fill", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_"))) 
+			.attr("stroke", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_")) )
+			//.attr("stroke-width", 0.1)
+			.attr("fill-opacity", 1)
+			.on("click", function(){d3.select(this).style("fill", function()
+				{return source[Math.floor(Math.random()*source.length)];});})
+			.on("mouseover", function(){d3.select(this).style("fill", "#00ffee");})
+			.on("mouseout", function(){d3.select(this).style("fill", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_")))})
+			.append("title")      //Simple tooltip
+			.text((d,i) => "Name : " + d.neighbourhood + "\nRoom Type : " +d.room_type +  "\nPrice :" + d.price )
+		
+		function circleSelect(circlePrice,min,max) {
+			circlePrice = +circlePrice;
+			min = +min;
+			max = +max;
+		  if (circlePrice <= max && circlePrice >= min) {
+			return 3;
+		  } else {
+			return 0;
+		  }
+		}
+		
+		// A function that update the chart when slider is moved?
+		 function updatePrice(min,max) {
+			var circleDemo = d3.selectAll("circle").data(newmarkers); 
+				  circleDemo.attr("r", (d,i)=> circleSelect(d.price,min,max) );
+		 }
+		
+		// Listen to the footslider?
+		d3.selectAll(".footinput").on("change", function(d){
+			min_input = d3.select("#min_input").node().value
+			max_input = d3.select("#max_input").property("value")
+			updatePrice(min_input,max_input)
+		})
+		
+		// This function is gonna change the opacity and size of selected and unselected circles
+		function update(){
+
+		  // For each check box:
+		  d3.selectAll(".checkbox").each(function(d){
+			cb = d3.select(this);
+			grp = cb.property("value")
+			// If the box is check, I show the group
+			if(cb.property("checked")){
+				svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1)
+			// Otherwise I hide it
+			}else{
+			  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0)
+			}
+		  })
+		}
+		
+		// When a button change, I run the update function
+		d3.selectAll(".checkbox").on("change",update);
+
+		// And I initialize it at the beginning
+		update()
+		updatePrice(d3.select("#min_input").node().value,d3.select("#max_input").node().value)
+		
+		d3.select("#max_input").node().focus();
+		
+	});
+	});
+})
+
+
+////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+	
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 20, left: 50},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg2 object to the body of the page
+var svg2 = d3.select("#my_dataviz2")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+          dataArray = []
+
+// Parse the Data
+d3.csv("AB_NYC_2019.csv",function(data) {
+  // console.log(JSON.stringify(data));
+  jsonString = JSON.stringify(data);
+  jsonArray = JSON.parse(jsonString)
+  // console.log(jsonString);
+  for (var i = 0; i < jsonArray.length; i++) {
+    // if(i == 40000){
+    //   break;
+    // }
+    // console.log(jsArray[i].id)
+    obj = new Object();
+    obj.id = jsonArray[i].id
+    obj.neighbourhood_group = jsonArray[i].neighbourhood_group
+    obj.neighbourhood = jsonArray[i].neighbourhood
+    obj.price = jsonArray[i].price
+    obj.room_type = jsonArray[i].room_type
+    dataArray.push(obj)
+  }
+  aftergrouping = _.groupBy(jsonArray,"neighbourhood_group")
+
+
+  brooklyn_count = _.countBy(aftergrouping["Brooklyn"],"room_type")
+  bronx_count = _.countBy(aftergrouping["Bronx"],"room_type")
+  manhattan_count = _.countBy(aftergrouping["Manhattan"],"room_type")
+  queens_count = _.countBy(aftergrouping["Queens"],"room_type")
+  staten_count = _.countBy(aftergrouping["Staten Island"],"room_type")
+
+
+  function arrayAverage(arr){
+      //Find the sum
+      var sum = 0;
+      for(var i in arr) {
+        n =  parseInt(arr[i]);
+          sum +=n;
+      }
+      //Get the length of the array
+      var numbersCnt = arr.length;
+      //Return the average / mean.
+      return (sum / numbersCnt);
+  }
+
+
+
+
+//   var count = {
+// "Brooklyn":brooklyn_count,
+// "Bronx":bronx_count,
+// "Manhattan":manhattan_count,
+// "Queens":queens_count,
+// "Staten Island":staten_count
+//   }
+
+var avg = {
+  "private_avg_count":0,
+  "home_avg_count" : 0,
+  "shared_avg_count" : 0
+}
+
+var avg_count = {
+"Brooklyn":{
+  avg:{}
+},
+"Bronx":{
+  avg:{}
+},
+"Manhattan":{
+  avg:{}
+},
+"Queens":{
+  avg:{}
+},
+"Staten Island":{
+  avg:{}
+}
+}
+
+
+function calculateAvg(array) {
+  price_array = [];
+  for(var i =0;i<array.length;i++){
+    price_array.push(array[i].price);
+  }
+    arrAvg = arrayAverage(price_array)
+    return arrAvg;
+}
+
+//
+// for(var i = 0;i<dataArray.length;i++){
+//   var neighbourhood_group = jsonArray[i].neighbourhood_group;
+//   count_of_room_type = count[neighbourhood_group];
+//       jsonArray[i].private_count = count_of_room_type["Private room"];
+//       jsonArray[i].home_count = count_of_room_type["Entire home/apt"];
+//       jsonArray[i].shared_count = count_of_room_type["Shared room"];
+// }
+
+key_after_grouping = Object.keys(aftergrouping);
+for(var i=0;i<key_after_grouping.length;i++){
+  neighbourhood_group_room_type_count = _.groupBy(aftergrouping[key_after_grouping[i]],"room_type")
+  avg = {};
+ avg["private_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Private room"]),
+  avg["home_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Entire home/apt"]),
+  avg["shared_avg_count"] = calculateAvg(neighbourhood_group_room_type_count["Shared room"])
+  if(key_after_grouping[i] == "Brooklyn"){
+    avg_count["Brooklyn"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Bronx"){
+    avg_count["Bronx"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Manhattan"){
+    avg_count["Manhattan"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Queens"){
+    avg_count["Queens"].avg = avg
+  }
+  else if(key_after_grouping[i] == "Staten Island"){
+    avg_count["Staten Island"].avg = avg
+  }
+}
+// avg["private_avg_count"] = calculateAvg(Brooklyn_room_type_count["Private room"]),
+// avg["home_avg_count"] = calculateAvg(Brooklyn_room_type_count["Entire home/apt"]),
+// avg["shared_avg_count"] = calculateAvg(Brooklyn_room_type_count["Shared room"])
+//
+//
+// avg_count["Brooklyn"].avg = avg
+
+for(var i = 0;i<dataArray.length;i++){
+  var neighbourhood_group = jsonArray[i].neighbourhood_group;
+  count_of_room_type = avg_count[neighbourhood_group].avg;
+      jsonArray[i]["Private Avg count"] = parseFloat(count_of_room_type["private_avg_count"]);
+      jsonArray[i]["Home Avg count"] = parseFloat(count_of_room_type["home_avg_count"]);
+      jsonArray[i]["Shared Avg count"] = parseFloat(count_of_room_type["shared_avg_count"]);
+}
+
+  // List of subgroups = header of the csv files = soil condition here
+  var subgroups = ["Private Avg count","Home Avg count","Shared Avg count"]
+
+  // List of groups = species here = value of the first column called group -> I show them on the X axis
+  var groups = d3.map(jsonArray, function(d){return(d.neighbourhood_group)}).keys()
+
+
+  // Add X axis
+  var x = d3.scaleBand()
+      .domain(groups)
+      .range([0, width])
+      .padding([0.2])
+  svg2.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x).tickSize(0));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0, 300])
+    .range([ height, 0 ]);
+  svg2.append("g")
+    .call(d3.axisLeft(y));
+
+  // Another scale for subgroup position?
+  var xSubgroup = d3.scaleBand()
+    .domain(subgroups)
+    .range([0, x.bandwidth()])
+    .padding([0.05])
+
+  // color palette = one color per subgroup
+  var color = d3.scaleOrdinal()
+    .domain(subgroups)
+    .range(['#e41a1c','#377eb8','#4daf4a'])
+
+
+    // var tip = d3.tip()
+    //   .attr('class', 'd3-tip')
+    //   .offset([-10, 0])
+    //   .html(function(d) {
+    //     return "<strong>Frequency:</strong> <span style='color:red'>" + d.frequency + "</span>";
+    //   })
+    //
+
+    var Tooltip = d3.select("#my_dataviz")
+     .append("div")
+     .style("opacity", 0)
+     .attr("class", "tooltip")
+     .style("background-color", "orange")
+     .style("border", "solid")
+     .style("border-width", "2px")
+     .style("border-radius", "5px")
+     .style("padding", "5px")
+     .style("width", "30%")
+
+
+   // Three function that change the tooltip when user hover / move / leave a cell
+   var mouseover = function(d) {
+     Tooltip
+       .style("opacity", 1)
+     d3.select(this)
+       .style("stroke", "black")
+       .style("opacity", 1)
+   }
+   var mousemove = function(d) {
+       Tooltip
+         .html("The: " + d.value)
+         .style("left", (d3.mouse(this)[0]+70) + "px")
+         .style("top", (d3.mouse(this)[1]) + "px")
+
+   }
+   var mouseleave = function(d) {
+     Tooltip
+       .style("opacity", 0)
+     d3.select(this)
+       .style("stroke", "none")
+       .style("opacity", 0.8)
+   }
+
+
+  // Show the bars
+  svg2.append("g")
+    .selectAll("g")
+    // Enter in data = loop group per group
+    .data(jsonArray)
+    .enter()
+    .append("g")
+      .attr("transform", function(d) { return "translate(" + x(d.neighbourhood_group) + ",0)"; })
+    .selectAll("rect")
+    .data(function(d) { return subgroups.map(function(key) { return {key: key, value: d[key]}; }); })
+    .enter().append("rect")
+      .attr("x", function(d) { return xSubgroup(d.key); })
+      .attr("y", function(d) { return y(d.value); })
+      .attr("width", xSubgroup.bandwidth())
+      .attr("height", function(d) { return height - y(d.value); })
+      .attr("fill", function(d) { return color(d.key); })
+      .on('mouseover', mouseover)
+      .on('mousemove', mousemove)
+      .on('mouseleave', mouseleave)
+
+
+
+      var tooplTipDiv = d3.select("body").append("div")
+                      .attr("id", "myTooltip")
+                      .style("opacity", 0);
+
+
+
+        var legend = svg2.selectAll(".legend")
+            .data(color.domain())
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+        // draw legend colored rectangles
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", color);
+
+        // draw legend text
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) { return d;})
+
+
+
+     });
+
+</script>

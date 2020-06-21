@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+<script src="javascripts/d3.slider.js"></script>
+
+<style>
+.slidecontainer {
+  width: 100%;
+}
+
+.footcontainer {
+  width: 50%;
+  text-align: center;
+    position: relative;
+}
+
+.footSlider {
+  width: 50%;
+  height: 25px;
+}
+
+.mySlider_p {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_p:hover {
+  opacity: 1;
+}
+
+.mySlider_p::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_p::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #f400fc;
+  cursor: pointer;
+ }
+ 
+.mySlider_e {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_e:hover {
+  opacity: 1;
+}
+
+.mySlider_e::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_e::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #001aff;
+  cursor: pointer; 
+ }
+ 
+ .mySlider_s {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_s:hover {
+  opacity: 1;
+}
+
+.mySlider_s::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_s::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffa600;
+  cursor: pointer;
+}
+
+ .mySlider_a {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_a:hover {
+  opacity: 1;
+}
+
+.mySlider_a::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_a::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: red;
+  cursor: pointer;
+}
+</style>
+
+<!-- Button -->
+<div class="slidecontainer">
+	<!-- Add a slider -->
+	<span id="myspan" style="color:blue"></span><br>
+	<input type="range" class="mySlider_p" name="Private_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Private_room" checked><label>Private room</label>
+	<span id="Private_room_span"></span><br>
+	
+	<input type="range" class="mySlider_e" name="Entire_home_apt" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Entire_home_apt" checked><label>Entire home/apt</label>
+	<span id="Entire home/apt"></span><br>
+	
+	<input type="range" class="mySlider_s" name="Shared_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Shared_room" checked><label>Shared room</label>
+	<span id="Shared room"></span><br>
+	
+	<input type="range" class="mySlider_a" name="Attraction" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="A" checked><label>Attraction</label>
+	<span id="Shared room"></span><br>
+</div>
+
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="640" height="530"></svg>
+
+<div class="footcontainer">
+	<span id="footspan" style="color:blue">200</span><br>
+	<input type="range" class="footSlider" name="Price_slider" axis="true" id=mySlider min="0" max="200" step="10" value="200">
+</div>
+
+<script>
+
+
+// The svg
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+// Map and projection
+var projection = d3.geoMercator()
+    .center([-73.97, 40.70])                // GPS of location to zoom on
+    .scale(53000)                       // This is like the zoom
+    .translate([ width/2, height/2 ])
+	
+//Define path generator
+var path = d3.geoPath()
+    .projection(projection);
+			   
+var colorScheme = d3.schemeGreens[9];
+//colorScheme.unshift("#eee")
+var colorScale = d3.scaleThreshold()
+    .domain([0, 10, 50, 100, 110, 130, 150, 170, 200])
+    .range(colorScheme);
+
+// Legend
+var g = svg.append("g")
+    .attr("class", "legendThreshold")
+    .attr("transform", "translate(20,120)");
+g.append("text")
+    .attr("class", "caption")
+    .attr("x", 0)
+    .attr("y", -6)
+    .text("neighbourhood_group Price Scale");
+var labels = ['0-10', '10-50', '50-100', '100-110', '110-130', '130-150', '150-170', '170-200', '> 200'];
+var legend = d3.legendColor()
+    .labels(function (d) { return labels[d.i] } )
+    .shapePadding(0)
+    .scale(colorScale);
+svg.select(".legendThreshold")
+    .call(legend);
+
+
+// Load external data and boot
+d3.json("./data/Boroughs.geojson", function(data){
+	
+	d3.csv("./data/test.csv" , function(markers) {
+	d3.csv("./data/favorites.csv" , function(favorites) {
+    d3.csv("./data/zone.csv", function(zone) {
+	
+		
+		
+		//provinces.features = data.features.filter( function(d){return d.properties.boro_name=="Bronx"} )
+		//document.getElementById("myspan").innerHTML = provinces.features.properties[0].boro_name
+		//Calculate Count and Avg
+		var countObj = {};
+		var countNeigh = {};
+		var avgObj = {};
+		var avgNeigh = {};
+		var maxPrice = 0;
+		for (var i = 0; i < markers.length; i++) {
+			var room_type = markers[i].room_type;
+			if(countObj[room_type] === undefined) {
+				countObj[room_type] = 1;
+				markers[i].price = +markers[i].price
+				avgObj[room_type] = markers[i].price;
+			} else {
+				countObj[room_type] = countObj[room_type] + 1;
+				markers[i].price = +markers[i].price
+				avgObj[room_type] = avgObj[room_type] + markers[i].price;
+			}
+			
+			var neighbourhood_group = markers[i].neighbourhood_group;
+			if(countNeigh[neighbourhood_group] === undefined) {
+				countNeigh[neighbourhood_group] = 1;
+				//markers[i].price = +markers[i].price
+				avgNeigh[neighbourhood_group] = markers[i].price;
+			} else {
+				countNeigh[neighbourhood_group] = countNeigh[neighbourhood_group] + 1;
+				//markers[i].price = +markers[i].price
+				avgNeigh[neighbourhood_group] = avgNeigh[neighbourhood_group] + markers[i].price;
+			}
+			
+			var tempPrice = markers[i].price;
+			if(tempPrice > maxPrice){
+				maxPrice = tempPrice
+			}
+		}
+		//var min = d3.min(markers.price);
+		d3.select(".footSlider")
+		.attr("max", maxPrice+10)
+		
+		
+		avgNeigh["Queens"] = avgNeigh["Queens"]/countNeigh["Queens"]
+		avgNeigh["Manhattan"] = avgNeigh["Manhattan"]/countNeigh["Manhattan"]
+		avgNeigh["Brooklyn"] = avgNeigh["Brooklyn"]/countNeigh["Brooklyn"]
+		avgNeigh["Bronx"] = avgNeigh["Bronx"]/countNeigh["Bronx"]
+		avgNeigh["Staten Island"] = avgNeigh["Staten Island"]/countNeigh["Staten Island"]
+		
+		document.getElementById("myspan").innerHTML = maxPrice
+		//Write Count and Avg
+		var format = d3.format(".3n");
+		document.getElementById("Private_room_span").innerHTML = " | Count : " + countObj["Private room"] + " | avgPrice : " + format(avgObj["Private room"]/countObj["Private room"]);
+		document.getElementById("Entire home/apt").innerHTML = " | Count : " + countObj["Entire home/apt"] + " | avgPrice : " + format(avgObj["Entire home/apt"]/countObj["Entire home/apt"]);
+		document.getElementById("Shared room").innerHTML = " | Count : " + countObj["Shared room"] + " | avgPrice : " + format(avgObj["Shared room"]/countObj["Shared room"]);
+		
+		
+		
+		// create a lookup table
+        var agrlookup = {}
+        for (var obj of zone )
+            agrlookup[ obj.neighbourhood_group ] = parseFloat(obj.value);
+		
+		
+		//Merge the ag. data and GeoJSON
+          for(var feature of data.features ){
+              feature.properties.value =
+                  agrlookup[feature.properties.boro_name]
+          }
+		 //document.getElementById("myspan").innerHTML = data.features.properties[0].value
+		 
+		// Create a color scale
+		var color = d3.scaleOrdinal()
+		  .domain(["Private_room", "Entire_home_apt", "Shared_room", "A", "Bronx"])
+		  .range([ "#f400fc", "#001aff", "#ffa600", "red", "blue"])
+
+		// Add a scale for bubble size
+		var size = d3.scaleLinear()
+		  .domain([1,100])  // What's in the data
+		  .range([ 4, 50])  // Size in pixel
+		
+		
+			
+		// Draw the map
+		var entrySelection = svg.append("g").selectAll("path").data(data.features).enter()
+		
+			entrySelection
+			.append("path")
+			.attr("class", "neigh_class")
+			  .attr("fill", function(d){ return colorScale(format(avgNeigh[d.properties.boro_name])) })  //format(avgNeigh[d.properties.boro_name]/countNeigh[d.properties.boro_name] )
+			  .attr("d", path
+			  )
+			.style("stroke", "black")
+			.style("opacity", .3)
+			.append("title")      //Simple tooltip
+			.text(function(d){ return ("avgPrice : " + format(avgNeigh[d.properties.boro_name])) })
+
+			entrySelection
+				.append("text")
+			  .attr("class", "label")
+			  .attr("text-anchor","middle")
+			  .attr("x", function(d) { return path.centroid(d)[0] })
+			  .attr("y", function(d) { return path.centroid(d)[1] })
+			  .text(function(d) { return d.properties.boro_name} )
+		  			
+		// Add circles:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(markers)
+		  .enter()
+		  .append("circle")
+			.attr("class" , function(d){ return d.room_type.replace(" ", "_").replace("/", "_") })
+			.attr("id", function(d, i) {return i})
+			.attr("price" , function(d){ return d.price })
+			.attr("cx", function(d){ return projection([d.longitude, d.latitude])[0] })
+			.attr("cy", function(d){ return projection([d.longitude, d.latitude])[1] })
+			.attr("r", "1")
+			.style("fill", function(d){ return color(d.room_type.replace(" ", "_").replace("/", "_")) })
+			.attr("stroke", function(d){ return color(d.room_type.replace(" ", "_").replace("/", "_")) })
+			//.attr("stroke-width", 0.1)
+			.attr("fill-opacity", 1)
+			.on("click", function(){d3.select(this).style("fill", function()
+				{return source[Math.floor(Math.random()*source.length)];});})
+			.on("mouseover", function(){d3.select(this).style("fill", "#00ffee");})
+			.on("mouseout", function(){d3.select(this).style("fill", function(d)
+				{return color(d.room_type.replace(" ", "_").replace("/", "_")) });} )
+			.append("title")      //Simple tooltip
+			.text(function(d){ return d.neighbourhood + " - Price :" + d.price })
+			
+
+		// Add favorites:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(favorites)
+		  .enter()
+		  .append("rect")
+			.attr("class" , function(d){ return d.room_type.replace(" ", "_").replace("/", "_") })
+			.attr("x", function(d){ return projection([d.longitude, d.latitude])[0] })
+			.attr("y", function(d){ return projection([d.longitude, d.latitude])[1] })
+			.attr("width", 5)
+			.attr("height", 5)
+			.style("fill", function(d){ return color(d.room_type.replace(" ", "_").replace("/", "_")) })
+			.attr("stroke", function(d){ return color(d.room_type.replace(" ", "_").replace("/", "_")) })
+			.attr("stroke-width", 1)
+			.attr("fill-opacity", 1)
+			.append("title")      //Simple tooltip
+			.text(function(d){ return d.name })
+			
+		// A function that update the chart when slider is moved?
+		 function updateChart(value,name) {
+			svg.selectAll("."+name).transition().duration(1000).style("fill-opacity", value/10)//.attr("r", value)
+		 }
+		
+		// Listen to the slider?
+		d3.selectAll(".mySlider").on("change", function(d){
+			selectedValue = this.value
+			selectedName = this.name
+			updateChart(selectedValue,selectedName)
+			document.getElementById("myspan").innerHTML = selectedName+" "+selectedValue
+		})
+		
+		
+		function circleSelect(a,b) {
+		  if (a <= b) {
+			return 5;
+		  } else {
+			return 0;
+		  }
+		}
+		
+		// A function that update the chart when slider is moved?
+		 function updatePrice(value,name) {
+			var circleDemo = d3.selectAll("circle").data(markers);  //d3.selectAll(document.links).style("color", "red");
+				  circleDemo.attr("r", function(d,i){ return circleSelect(d.price,value) });
+		 }
+		
+		// Listen to the footslider?
+		d3.selectAll(".footSlider").on("change", function(d){
+			selectedValue = this.value
+			selectedName = this.name
+			updatePrice(selectedValue,selectedName)
+			document.getElementById("footspan").innerHTML = selectedValue
+		})
+		
+		
+
+		// This function is gonna change the opacity and size of selected and unselected circles
+		function update(){
+
+		  // For each check box:
+		  d3.selectAll(".checkbox").each(function(d){
+			cb = d3.select(this);
+			grp = cb.property("value")
+			
+			// If the box is check, I show the group
+			if(cb.property("checked")){
+				svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1).attr("r", function(d){ return 3})
+				
+			// Otherwise I hide it
+			}else{
+			  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0).attr("r", 0)
+			  
+			  
+			}
+		  })
+		}
+
+		// When a button change, I run the update function
+		d3.selectAll(".checkbox").on("change",update);
+
+		// And I initialize it at the beginning
+		update()
+	});
+	});
+	});
+})
+
+</script>

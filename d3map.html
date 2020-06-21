@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo-projection.v2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.24.0/d3-legend.js"></script>
+<script src="javascripts/d3.slider.js"></script>
+
+<style>
+.slidecontainer {
+  width: 100%;
+}
+
+.footcontainer {
+  width: 50%;
+  text-align: center;
+    position: relative;
+}
+
+.footSlider {
+  width: 50%;
+  height: 25px;
+}
+
+.mySlider_p {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_p:hover {
+  opacity: 1;
+}
+
+.mySlider_p::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_p::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #f400fc;
+  cursor: pointer;
+ }
+ 
+.mySlider_e {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_e:hover {
+  opacity: 1;
+}
+
+.mySlider_e::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_e::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #001aff;
+  cursor: pointer; 
+ }
+ 
+ .mySlider_s {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_s:hover {
+  opacity: 1;
+}
+
+.mySlider_s::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_s::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #ffa600;
+  cursor: pointer;
+}
+
+ .mySlider_a {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.mySlider_a:hover {
+  opacity: 1;
+}
+
+.mySlider_a::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.mySlider_a::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: red;
+  cursor: pointer;
+}
+</style>
+
+
+<!-- Button -->
+<div class="slidecontainer">
+<h3><span id="footspan_text" style="color:black">Data randomly selected from "AB_NYC_2019.csv"</span></h3>
+	<!-- Add a slider -->
+	<span id="myspan" style="color:blue"></span><br>
+	<input type="range" class="mySlider_p" name="Private_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox"  class="checkbox" value="Private_room" checked><label>Private room</label>
+	<span id="Private_room_span"></span><br>
+	
+	<input type="range" class="mySlider_e" name="Entire_home_apt" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Entire_home_apt" checked><label>Entire home/apt</label>
+	<span id="Entire home/apt"></span><br>
+	
+	<input type="range" class="mySlider_s" name="Shared_room" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="Shared_room" checked><label>Shared room</label>
+	<span id="Shared room"></span> <br>
+	
+	<input type="range" class="mySlider_a" name="Attraction" id=mySlider min="0" max="10" value="10">
+	<input type="checkbox" class="checkbox" value="attraction" checked><label>Attraction</label>
+	<span id="Attraction room"></span><br>
+</div>
+
+<!-- Create an element where the map will take place -->
+<svg id="my_dataviz" width="640" height="460"></svg>
+
+<div class="footcontainer">
+	<!--<span hidden id="valuespan" style="color:green">0</span><br>
+	<input type="range" hidden class="valueSlider" name="Value_slider" axis="true" id=mySlider min="0" max="12" step="1" value="0"><br>-->
+	"Control Key" | Room Price <= <span id="footspan" style="color:blue">200</span><br>
+	<input type="range" class="footSlider" name="Price_slider" axis="true" id=mySlider min="0" max="200" step="10" value="200"><br>
+	<!--<span id="footspan_text" style="color:black">Press "Control Key" once to focus on the Slider (Doesn't need on first loading)</span><br>-->
+	<span id="footspan_text" style="color:black">Press "Left Arrow Key" or "Right Arrow Key" to move Sliders</span><br>
+</div>
+
+<script>
+
+
+
+
+	
+// The svg
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+// Map and projection
+var projection = d3.geoMercator()
+    .center([-73.97, 40.70])                // GPS of location to zoom on
+    .scale(46000)                       // This is like the zoom
+    .translate([ width/2, height/2 ])
+	
+//Define path generator
+var path = d3.geoPath()
+    .projection(projection);
+			   
+
+
+// Load external data and boot
+d3.json("Boroughs.geojson", function(data){
+	
+	d3.csv("AB_NYC_2019.csv" , function(markers) {
+	d3.csv("attractions.csv" , function(attractions) {
+		
+		favorites = attractions.map(function( item ) {
+        var newItem = {};
+        newItem.longitude = item.longitude;
+        newItem.latitude = item.latitude;
+        newItem.name = +item.name;
+			return newItem;
+		})
+		function indexOfMarkers() {
+		  return Math.floor((Math.random() * 50) + 5);
+		}
+		newmarkers = markers.filter((d,i) => d.price != 0 && d.number_of_reviews >= 100 && d.price < 1000)
+	
+		
+		var format = d3.format(".3n");
+		//Calculate Count and Avg
+		var countObj = {};
+		var countNeigh = {};
+		var avgObj = {};
+		var avgNeigh = {};
+		var maxPrice = 0;
+		//var room_value = d3.scaleOrdinal()
+			 // .domain(["Entire home/apt", "Private room", "Shared room"])
+			  //.range([ 4, 2, 1])
+			  
+		//var attraction_value = d3.scaleThreshold()
+			  //.domain([0, 0.01, 0.05, 0.1, 0.2])
+			//  .range([ 5, 4, 3, 2, 1, 0.5])
+		
+		//var price_value = d3.scaleThreshold()
+			//  .domain([0, 50, 100, 500, 1000])
+			 // .range([ 5, 4, 3, 2, 1, 0.5])
+			  
+		for (var i = 0; i < newmarkers.length; i++) {
+			var room_type = newmarkers[i].room_type;
+			if(countObj[room_type] === undefined) {
+				countObj[room_type] = 1;
+				newmarkers[i].price = +newmarkers[i].price
+				avgObj[room_type] = newmarkers[i].price;
+			} else {
+				countObj[room_type] = countObj[room_type] + 1;
+				newmarkers[i].price = +newmarkers[i].price
+				avgObj[room_type] = avgObj[room_type] + newmarkers[i].price;
+			}
+			
+			var neighbourhood_group = newmarkers[i].neighbourhood_group;
+			if(countNeigh[neighbourhood_group] === undefined) {
+				countNeigh[neighbourhood_group] = 1;
+				avgNeigh[neighbourhood_group] = newmarkers[i].price;
+			} else {
+				countNeigh[neighbourhood_group] = countNeigh[neighbourhood_group] + 1;
+				avgNeigh[neighbourhood_group] = avgNeigh[neighbourhood_group] + newmarkers[i].price;
+			}
+			
+			var tempPrice = newmarkers[i].price;
+			if(tempPrice > maxPrice){
+				maxPrice = tempPrice
+			}
+			
+			///////////////change with hotel value calculate/////////////
+			newmarkers[i].value = 8//format(price_value(newmarkers[i].price) + room_value(newmarkers[i].room_type))
+			//////////////////////////////////////////
+			
+		}
+			
+		
+		
+		d3.select(".footSlider")
+			.attr("max", maxPrice+10)
+			//.property("value", maxPrice);
+			
+		document.getElementById("footspan").innerHTML = maxPrice
+		
+		avgNeigh["Queens"] = avgNeigh["Queens"]/countNeigh["Queens"]
+		avgNeigh["Manhattan"] = avgNeigh["Manhattan"]/countNeigh["Manhattan"]
+		avgNeigh["Brooklyn"] = avgNeigh["Brooklyn"]/countNeigh["Brooklyn"]
+		avgNeigh["Bronx"] = avgNeigh["Bronx"]/countNeigh["Bronx"]
+		avgNeigh["Staten Island"] = avgNeigh["Staten Island"]/countNeigh["Staten Island"]
+		
+
+		//Write Count and Avg
+		
+		document.getElementById("Private_room_span").innerHTML = " | Count : " + countObj["Private room"] + " | avgPrice : " + format(avgObj["Private room"]/countObj["Private room"]);
+		document.getElementById("Entire home/apt").innerHTML = " | Count : " + countObj["Entire home/apt"] + " | avgPrice : " + format(avgObj["Entire home/apt"]/countObj["Entire home/apt"]);
+		document.getElementById("Shared room").innerHTML = " | Count : " + countObj["Shared room"] + " | avgPrice : " + format(avgObj["Shared room"]/countObj["Shared room"]);
+		
+		// Create a color scale
+		var color = d3.scaleOrdinal()
+		  .domain(["Private_room", "Entire_home_apt", "Shared_room", "A", "Brooklyn", "Bronx", "Manhattan","Queens","Staten Island"])
+		  .range([ "#f400fc", "#001aff", "#ffa600", "red", "orange", "purple", "green", "red", "blue"])
+
+		// Add a scale for bubble size
+		var size = d3.scaleLinear()
+		  .domain([1,100])  // What's in the data
+		  .range([ 4, 50])  // Size in pixel
+		
+		
+			
+		// Draw the map
+		var entrySelection = svg.append("g").selectAll("path").data(data.features).enter()
+		
+			entrySelection
+			.append("path")
+			.attr("class", "neigh_class")
+			  .attr("fill", (d,i)=> color([d.properties.boro_name]) ) 
+			  .attr("d", path
+			  )
+			.style("stroke", "black")
+			.style("opacity", .3)
+			.append("title")      //Simple tooltip
+			.text((d,i)=> ("avgPrice : " + format(avgNeigh[d.properties.boro_name])) )
+
+			entrySelection
+				.append("text")
+			  .attr("class", "label")
+			  .attr("text-anchor","middle")
+			  .attr("x", (d,i)=> path.centroid(d)[0] )
+			  .attr("y", (d,i)=> path.centroid(d)[1] )
+			  .text((d,i)=> d.properties.boro_name )
+		  			
+		// Add circles:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(newmarkers)
+		  .enter()
+		  .append("circle")
+			.attr("class" , (d,i) => d.room_type.replace(" ", "_").replace("/", "_") )
+			.attr("id", (d,i) => i)
+			.attr("price" , (d,i) => d.price )
+			.attr("value" , (d,i) => d.value )
+			.attr("cx", (d,i) => projection([d.longitude, d.latitude])[0] )
+			.attr("cy", (d,i) => projection([d.longitude, d.latitude])[1] )
+			.attr("r", 3)
+			.style("fill", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_")))
+			.attr("stroke", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_")) )
+			.attr("fill-opacity", 1)
+			.on("click", function(){d3.select(this).style("fill", function()
+				{return source[Math.floor(Math.random()*source.length)];});})
+			.on("mouseover", function(){d3.select(this).style("fill", "#00ffee");})
+			.on("mouseout", function(){d3.select(this).style("fill", (d,i) => color(d.room_type.replace(" ", "_").replace("/", "_")))})
+			.append("title")      //Simple tooltip
+			.text((d,i) => d.neighbourhood + "\n" +d.room_type +  "\nPrice :" + d.price + "\nValue :" + d.value )
+			
+
+		// Add favorites:
+		var curve = svg
+		  .selectAll("myCircles")
+		  .data(favorites)
+		  .enter()
+		  .append("rect")
+			.attr("class" , "attraction" )
+			.attr("x", (d,i) => projection([d.longitude, d.latitude])[0] )
+			.attr("y", (d,i) => projection([d.longitude, d.latitude])[1] )
+			.attr("width", 1)
+			.attr("height", 1)
+			.style("fill", "red" )
+			.attr("stroke", "red" )
+			.attr("stroke-width", 0.1)
+			.attr("fill-opacity", 0.1)
+			.append("title")      //Simple tooltip
+			.text((d,i) => d.name )
+			
+	
+		document.addEventListener('keydown', (event) => {
+		  const keyName = event.key;
+		
+		  if (keyName === 'Control') {
+				 d3.select(".footSlider").node().focus();
+			return;
+		  
+		 // }else if (keyName === 'p' || keyName === 's' || keyName === 'e' || keyName === 'a') {
+				// For each check box:
+				 d3.selectAll(".checkbox").each(function(d){
+					cb = d3.select(this);
+					grp = cb.property("value")
+			
+					
+					if ((grp === "Private_room" && keyName === "p") || (grp === "Shared_room" && keyName === "s") || 
+						(grp === "Entire_home_apt" && keyName === "e") || (grp === "A" && keyName === "a")){
+						if(cb.property("checked")){
+							cb.property("checked", 0)
+						} else {
+							cb.property("checked", 1)
+						}
+						// If the box is check, I show the group
+						if(cb.property("checked")){
+							svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1)
+						// Otherwise I hide it
+						}else{
+						  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0)
+						}
+					}
+				  })
+			
+				 
+		
+			return;
+		  }
+		}, false);
+		
+		function circleSelect(circlePrice,price) {
+			circlePrice = +circlePrice;
+			price = +price;
+		 
+		  if ((circlePrice <= price)) {
+			return 3;
+		  } else {
+			return 0;
+		  }
+		}
+		
+		// A function that update the chart when slider is moved?
+		 function updatePrice(price) {
+			var circleDemo = d3.selectAll("circle").data(newmarkers); 
+				  circleDemo.attr("r", (d,i)=> circleSelect(d.price,price) );
+		 }
+		
+		function updatestep(value) {
+		//document.getElementById("myspan").innerHTML = "ustep"
+			if(value > 1000){
+				d3.select(".footSlider")
+					.attr("step", 1000)
+			} else if(value > 100){
+				d3.select(".footSlider")
+					.attr("step", 100)
+			} else {
+				d3.select(".footSlider")
+					.attr("step", 10)
+			}
+		 }
+		 
+		  function updateSlider(price) {
+			updatestep(price)
+			updatePrice(price)
+			document.getElementById("footspan").innerHTML = price
+		 }
+		 
+		// Listen to the footslider?
+		d3.selectAll(".footSlider").on("change", function(d){
+			selectedValue = this.value
+			updateSlider(selectedValue)
+		})
+		
+	
+		
+		
+
+		// This function is gonna change the opacity and size of selected and unselected circles
+		function update(){
+
+		  // For each check box:
+		  d3.selectAll(".checkbox").each(function(d){
+			cb = d3.select(this);
+			grp = cb.property("value")
+			
+			// If the box is check, I show the group
+			if(cb.property("checked")){
+				svg.selectAll("."+grp).transition().duration(1000).style("opacity", 1)
+			// Otherwise I hide it
+			}else{
+			  svg.selectAll("."+grp).transition().duration(1000).style("opacity", 0)
+			}
+		  })
+		}
+		
+		
+
+		// When a button change, I run the update function
+		d3.selectAll(".checkbox").on("change",update);
+
+		// And I initialize it at the beginning
+		update()
+		updateSlider(200)
+		
+		d3.select(".footSlider").node().focus();
+		
+	});
+	});
+})
+
+</script>
